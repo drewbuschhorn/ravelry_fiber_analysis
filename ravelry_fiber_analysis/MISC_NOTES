@@ -1,0 +1,78 @@
+# Taken from https://github.com/requests/requests-oauthlib
+import os
+import requests_cache
+
+from ravelry_fiber_analysis import ravelry_api_common
+
+def find_projects(topic):
+    requests_cache.install_cache('ravelry_cache')
+
+    from requests_oauthlib import OAuth1Session
+    client_key = os.environ.get('RAVELRY_CLIENT_KEY')  # Replace with: client_key = "CLIENT_KEY_HERE" , if no env vars
+    client_secret = os.environ.get('RAVELRY_CLIENT_SECRET') # Replace with: client_secret = "CLIENT_SECRET_HERE" , if no env vars
+    resource_owner_key = os.environ.get('RAVELRY_OAUTH_TOKEN') # Replace with: resource_owner_key = "OAUTH_TOKEN_HERE" , if no env vars
+    resource_owner_secret = os.environ.get('RAVELRY_OAUTH_SECRET') # Replace with: resource_owner_secret = "OAUTH_SECRET_HERE" , if no env vars
+
+    oauth = OAuth1Session(client_key,
+                               client_secret=client_secret,
+                               resource_owner_key=resource_owner_key,
+                               resource_owner_secret=resource_owner_secret)
+
+    #r = oauth.get('https://api.ravelry.com/current_user.json')
+    #r = oauth.get('https://api.ravelry.com/patterns/search.json?craft=knitting&sort=popularity&pc=sweater')
+    r = oauth.get('https://api.ravelry.com/projects/search.json?project_id=12799733')
+    #r = oauth.get('https://api.ravelry.com/projects/juliayork/12690063.json')
+    #r = oauth.get('https://api.ravelry.com/yarns/search.json?sort=projects')
+    #r = oauth.get('https://api.ravelry.com/yarns/1728.json')
+    #r = oauth.get('https://api.ravelry.com/projects/search.json?pc=sweater&yarn-link=cascade-yarns-cascade-220&sort=popular')
+    #r = oauth.get('https://api.ravelry.com/projects/search.json?pattern-link=hitofude-cardigan&sort=popularity')
+    print r,r.text,r.from_cache
+
+    #let's get some patterns and their projects
+    ravelry_api = 'https://api.ravelry.com'
+    patterns_url = ravelry_api + '/patterns/search.json?craft=knitting&pc=sweater&sort=popularity&page_size=100&page=1'
+    projects_url = ravelry_api + '/projects/search.json?craft=knitting&pc=sweater&status=finished&pattern-link=%s&sort=popularity&page_size=100&page=1'
+
+    r = oauth.get(patterns_url)
+    print r,r.from_cache
+    import json
+    patterns_json = json.loads(r.text)
+
+    # print json.dumps(patterns_json, sort_keys=True,
+    #                  indent=2, separators=(',', ': '))
+
+    stored_json_patterns = {'patterns':[]}
+    for item in patterns_json['patterns']:
+        print '[%s] [%s] [%s]' % (item['id'], item['name'],item['permalink'])
+        stored_json_patterns['patterns'].append({'id':item['id'], 'name':item['name'], 'permalink':item['permalink']})
+
+    print '<<>>'
+    print json.dumps(stored_json_patterns, sort_keys=True,
+                     indent=2, separators=(',', ': '))
+    print '<<>>'
+
+    import time
+    stored_json_projects = {'projects': []}
+    for item in stored_json_patterns['patterns']:
+        url = projects_url % (item['permalink'],)
+        resp = oauth.get(url)
+        print resp,resp.from_cache,url
+        stored_json_this_pattern_projects = {item['permalink']:[]}
+        projects_json = json.loads(resp.text)
+        for project in projects_json['projects']:
+            stored_json_this_pattern_projects[item['permalink']].append(
+                { 'id': project['id'], 'name': project['name'], 'permalink': project['permalink'],
+                    'pattern_id': project['pattern_id'], 'user_id': project['user_id'], 'username': project['user']['username'],
+                        'status': project['status_name'], 'tag_names': project['tag_names'], }
+            )
+        stored_json_projects['projects'].append(stored_json_this_pattern_projects)
+        time.sleep(0.1)
+
+    print '<<>>'
+    print json.dumps(stored_json_projects, sort_keys=True,
+                     indent=2, separators=(',', ': '))
+    print '<<>>'
+
+    fp = open('projects','wb')
+    json.dump(stored_json_projects,fp)
+    fp.close()
