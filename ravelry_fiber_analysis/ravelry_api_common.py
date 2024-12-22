@@ -2,6 +2,10 @@ import os
 import requests
 import requests_cache
 from requests_oauthlib import OAuth1Session
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 # start Ravelry constants
 RAVELRY_API = 'https://api.ravelry.com'

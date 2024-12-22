@@ -36,7 +36,7 @@ def parse_fiber_counts():
                 if i != j:
                     yarn_data_matrix[yarn_name_to_matrix_id_dict[str(i['yarn_id'])]][yarn_name_to_matrix_id_dict[str(j['yarn_id'])]] += 1
 
-        print key
+        print (key)
 
     plt.spy(yarn_data_matrix, precision=0.01, markersize=1)
     plt.show()

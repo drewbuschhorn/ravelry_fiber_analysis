@@ -1,8 +1,13 @@
 # Taken from https://github.com/requests/requests-oauthlib
 import os
 from requests_oauthlib import OAuth1Session
+from dotenv import load_dotenv
+
+load_dotenv()
+
 client_key = os.environ.get('RAVELRY_CLIENT_KEY')  # Replace with: client_key = "CLIENT_KEY_HERE" , if no env vars
-client_secret = os.environ.get('RAVELRY_CLIENT_SECRET') # Replace with: client_secret = "CLIENT_SECRET_HERE" , if no env vars
+client_secret = os.environ.get(
+        'RAVELRY_CLIENT_SECRET')  # Replace with: client_secret = "CLIENT_SECRET_HERE" , if no env vars
 
 request_token_url = 'https://www.ravelry.com/oauth/request_token'
 # Note Ravelry requires the callback_uri param but doesn't accept OOB
@@ -13,9 +18,9 @@ resource_owner_secret = fetch_response.get('oauth_token_secret')
 
 base_authorization_url = 'https://www.ravelry.com/oauth/authorize'
 authorization_url = oauth.authorization_url(base_authorization_url)
-print 'Please go here and authorize,', authorization_url
+print ('Please go here and authorize,', authorization_url)
 
-redirect_response = raw_input('Paste the full redirect URL here: ')
+redirect_response = input('Paste the full redirect URL here: ')
 
 oauth_response = oauth.parse_authorization_response(redirect_response)
 verifier = oauth_response.get('oauth_verifier')
@@ -28,7 +33,7 @@ oauth = OAuth1Session(client_key,
                            verifier=verifier)
 oauth_tokens = oauth.fetch_access_token(access_token_url)
 
-print oauth_tokens
+print (oauth_tokens)
 resource_owner_key = oauth_tokens.get('oauth_token')
 resource_owner_secret = oauth_tokens.get('oauth_token_secret')
 oauth = OAuth1Session(client_key,
@@ -37,4 +42,4 @@ oauth = OAuth1Session(client_key,
                            resource_owner_secret=resource_owner_secret)
 r = oauth.get('https://api.ravelry.com/current_user.json')
 
-print r.text
+print (r.text)
